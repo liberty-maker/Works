@@ -1,47 +1,50 @@
-// ====== НАСТРОЙКИ ======
-const ADMIN_PASSWORD = "123456"; // ← поменяй на свой
+const input = document.getElementById('fileInput');
+const btn = document.getElementById('add');
+const gallery = document.getElementById('adminGallery');
 
-const SUPABASE_URL = "https://avvvwhriftnynhvltguuc.supabase.co";
-const SUPABASE_SERVICE_KEY = "PASTE_YOUR_SERVICE_ROLE_KEY_HERE";
-const BUCKET = "works";
-// ======================
+let works = JSON.parse(localStorage.getItem('works') || '[]');
 
-function login() {
-  const input = document.getElementById("password").value;
+function render() {
+  gallery.innerHTML = '';
+  works.forEach((w, i) => {
+    const div = document.createElement('div');
+    div.className = 'item';
+    div.draggable = true;
+    div.dataset.index = i;
 
-  if (input === ADMIN_PASSWORD) {
-    document.getElementById("admin-panel").style.display = "block";
-    alert("Access granted");
-  } else {
-    alert("Wrong password");
-  }
-}
+    div.innerHTML = w.type === 'video'
+      ? `<video src="${w.src}" muted loop></video>`
+      : `<img src="${w.src}" />`;
 
-async function upload() {
-  const fileInput = document.getElementById("file");
-  const type = document.getElementById("type").value;
-  const file = fileInput.files[0];
+    div.ondragstart = e => e.dataTransfer.setData('i', i);
+    div.ondragover = e => e.preventDefault();
+    div.ondrop = e => {
+      const from = e.dataTransfer.getData('i');
+      [works[from], works[i]] = [works[i], works[from]];
+      save();
+    };
 
-  if (!file) {
-    alert("Choose a file");
-    return;
-  }
-
-  const path = `${type}/${Date.now()}-${file.name}`;
-
-  const res = await fetch(`${SUPABASE_URL}/storage/v1/object/${BUCKET}/${path}`, {
-    method: "POST",
-    headers: {
-      "Authorization": `Bearer ${SUPABASE_SERVICE_KEY}`,
-      "Content-Type": file.type
-    },
-    body: file
+    gallery.appendChild(div);
   });
-
-  if (res.ok) {
-    alert("Uploaded successfully");
-  } else {
-    const err = await res.text();
-    alert("Upload error: " + err);
-  }
 }
+
+function save() {
+  localStorage.setItem('works', JSON.stringify(works));
+  render();
+}
+
+btn.onclick = () => {
+  [...input.files].forEach(file => {
+    const reader = new FileReader();
+    reader.onload = e => {
+      works.unshift({
+        type: file.type.startsWith('video') ? 'video' : 'image',
+        src: e.target.result
+      });
+      save();
+    };
+    reader.readAsDataURL(file);
+  });
+};
+
+render();
