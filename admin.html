@@ -2,47 +2,55 @@
 <html lang="ru">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Admin — Anna</title>
-  <link rel="stylesheet" href="styles.css" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Admin — ANNA</title>
+  <link rel="stylesheet" href="./styles.css" />
 </head>
 <body>
-  <div class="bg"></div>
-  <div class="noise"></div>
+  <header class="topbar glass">
+    <div class="brand">
+      <div class="brand__name">Admin board</div>
+      <div class="brand__tagline">Загрузка + порядок + тексты сайта</div>
+    </div>
+    <a class="topbar__link" href="./index.html">Back</a>
+  </header>
 
   <main class="wrap">
-    <section class="hero glass">
-      <h1>Admin board</h1>
-      <p class="lead">Загрузка фото/видео → Supabase Storage (Works) → моментально на сайте.</p>
-      <p class="hint">Drag items to reorder. Порядок сохранится для всех.</p>
-    </section>
-
-    <section class="glass adminPanel">
-      <h2 class="panelTitle">Supabase (1 раз)</h2>
+    <section class="glass panel">
+      <h2 class="h2">Site meta (текст + контакты)</h2>
 
       <div class="grid2">
         <label class="field">
-          <span>Project URL</span>
-          <input id="sbUrl" placeholder="https://xxxx.supabase.co" />
+          <span>Name</span>
+          <input id="mName" placeholder="ANNA" />
         </label>
         <label class="field">
-          <span>Publishable key</span>
-          <input id="sbKey" placeholder="sb_publishable_..." />
+          <span>Tagline</span>
+          <input id="mTagline" placeholder="AI Visual Portfolio" />
         </label>
-        <label class="field fieldFull">
-          <span>Bucket</span>
-          <input id="sbBucket" value="Works" />
+        <label class="field">
+          <span>Title</span>
+          <input id="mTitle" placeholder="Portfolio" />
+        </label>
+        <label class="field">
+          <span>Subtitle</span>
+          <input id="mSubtitle" placeholder="Infinite board of AI works" />
         </label>
       </div>
 
+      <label class="field">
+        <span>Links (по одному на строку: “Label | https://…”) </span>
+        <textarea id="mLinks" rows="4" placeholder="Instagram | https://instagram.com/…"></textarea>
+      </label>
+
       <div class="row">
-        <button class="btn" id="saveSb">Save</button>
-        <span class="hint">Bucket должен быть Works (с большой W).</span>
+        <button id="saveMeta" class="btn" type="button">Save meta</button>
+        <span id="metaStatus" class="muted"></span>
       </div>
     </section>
 
-    <section class="glass adminPanel">
-      <h2 class="panelTitle">Add</h2>
+    <section class="glass panel">
+      <h2 class="h2">Add work</h2>
 
       <div class="grid2">
         <label class="field">
@@ -64,24 +72,32 @@
         </label>
 
         <label class="field">
-          <span>Caption</span>
-          <input id="caption" placeholder="optional" />
+          <span>Caption (optional)</span>
+          <input id="caption" placeholder="short vibe / prompt / note" />
         </label>
       </div>
 
       <div class="row">
-        <button class="btn" id="upload">Upload + Add</button>
-        <span class="hint" id="status"></span>
+        <button id="upload" class="btn" type="button">Upload + Add</button>
+        <span id="uploadStatus" class="muted"></span>
       </div>
     </section>
 
-    <section class="glass adminPanel">
-      <h2 class="panelTitle">Board</h2>
-      <div id="adminBoard" class="board adminBoard"></div>
+    <section class="glass panel">
+      <h2 class="h2">Board (drag to reorder)</h2>
+      <div id="adminBoard" class="masonry admin"></div>
+      <div class="row">
+        <button id="saveOrder" class="btn subtle" type="button">Save order</button>
+        <span id="orderStatus" class="muted"></span>
+      </div>
     </section>
   </main>
 
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="admin.js"></script>
+  <div id="viewer" class="viewer" aria-hidden="true">
+    <button id="viewerClose" class="viewer__close" type="button" aria-label="Close">✕</button>
+    <div id="viewerBody" class="viewer__body"></div>
+  </div>
+
+  <script src="./admin.js"></script>
 </body>
 </html>
