@@ -1,369 +1,282 @@
-// ====== PASTE HERE (Supabase Settings → API) ======
-const SUPABASE_URL = "https://lhewgyfmmeedzqxhjmhd.supabase.co";
-const SUPABASE_KEY = "sb_publishable_qogHp4h5jucsviDIjSE_Ow_EfycJdGq";
-const BUCKET = "Works";
-// ==================================================
+const SUPABASE_URL = "https://lhewgyfmmeedzqxhjmhd.supabase.co"
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxoZXdneWZtbWVlZHpxeGhqbWhkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA1ODQzNTUsImV4cCI6MjA4NjE2MDM1NX0.ZPfqhuunp7WaVM0OsuNWSYini_8f85RYbsVqDeQcMNo";
 
-const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 const board = document.getElementById("board");
-const loader = document.getElementById("loader");
+const loadMoreBtn = document.getElementById("loadMore");
 
-// meta
 const metaName = document.getElementById("metaName");
 const metaTagline = document.getElementById("metaTagline");
 const metaTitle = document.getElementById("metaTitle");
 const metaSubtitle = document.getElementById("metaSubtitle");
 const metaLinks = document.getElementById("metaLinks");
-const editMetaBtn = document.getElementById("editMetaBtn");
-const metaModal = document.getElementById("metaModal");
-const metaClose = document.getElementById("metaClose");
-const metaSave = document.getElementById("metaSave");
-const metaStatus = document.getElementById("metaStatus");
 
-const mName = document.getElementById("mName");
-const mTagline = document.getElementById("mTagline");
-const mTitle = document.getElementById("mTitle");
-const mSubtitle = document.getElementById("mSubtitle");
-const mLinks = document.getElementById("mLinks");
+const viewer = document.getElementById("viewer");
+const viewerBody = document.getElementById("viewerBody");
+const viewerClose = document.getElementById("viewerClose");
 
-// lightbox
-const lightbox = document.getElementById("lightbox");
-const lbInner = document.getElementById("lbInner");
-const lbClose = document.getElementById("lbClose");
-const lbTitle = document.getElementById("lbTitle");
-const likeBtn = document.getElementById("likeBtn");
-const likeCount = document.getElementById("likeCount");
-const viewCount = document.getElementById("viewCount");
+const clientIdKey = "anna_client_id_v1";
+const clientId = localStorage.getItem(clientIdKey) || crypto.randomUUID();
+localStorage.setItem(clientIdKey, clientId);
 
-const CLIENT_KEY = "anna.client_id.v1";
-const ADMIN_FLAG = "anna.admin_mode.v1";
-
-function getClientId(){
-  let id = localStorage.getItem(CLIENT_KEY);
-  if(!id){
-    id = crypto.randomUUID ? crypto.randomUUID() : (Math.random().toString(16).slice(2) + Date.now().toString(16));
-    localStorage.setItem(CLIENT_KEY, id);
-  }
-  return id;
-}
-const clientId = getClientId();
-
-// ===== Meta from DB (site_meta)
-async function loadMeta(){
-  const { data } = await sb.from("site_meta").select("value").eq("key","main").maybeSingle();
-  const v = data?.value || {};
-
-  metaName.textContent = v.name || "ANNA";
-  metaTagline.textContent = v.tagline || "AI Visual Portfolio";
-  metaTitle.textContent = v.title || "Portfolio";
-  metaSubtitle.textContent = v.subtitle || "Infinite board of AI works";
-
-  renderLinks(v.links || []);
-  // preload modal
-  mName.value = v.name || "";
-  mTagline.value = v.tagline || "";
-  mTitle.value = v.title || "";
-  mSubtitle.value = v.subtitle || "";
-  mLinks.value = (v.links || []).map(x => `${x.label}|${x.url}`).join("\n");
-}
-function renderLinks(list){
-  metaLinks.innerHTML = "";
-  (list || []).slice(0,6).forEach(l=>{
-    const a = document.createElement("a");
-    a.href = l.url;
-    a.target = "_blank";
-    a.rel = "noopener";
-    a.textContent = l.label;
-    metaLinks.appendChild(a);
-  });
-}
-
-// ===== Admin mode for editing meta (simple, not public button)
-function isAdminMode(){
-  return localStorage.getItem(ADMIN_FLAG) === "1";
-}
-function setAdminMode(v){
-  localStorage.setItem(ADMIN_FLAG, v ? "1" : "0");
-  editMetaBtn.style.display = v ? "inline-block" : "none";
-}
-setAdminMode(isAdminMode());
-
-// hidden shortcut: type "anna" and press Enter to toggle edit button
-let secret = "";
-window.addEventListener("keydown", (e)=>{
-  if(e.key.length === 1) secret += e.key.toLowerCase();
-  if(e.key === "Enter"){
-    if(secret.includes("anna")){
-      setAdminMode(!isAdminMode());
-      secret = "";
-    }
-  }
-  if(secret.length > 20) secret = secret.slice(-20);
-});
-
-editMetaBtn.addEventListener("click", ()=>{
-  metaModal.classList.add("isOpen");
-  metaModal.setAttribute("aria-hidden","false");
-});
-metaClose.addEventListener("click", closeMeta);
-metaModal.addEventListener("click", (e)=>{ if(e.target === metaModal) closeMeta(); });
-function closeMeta(){
-  metaModal.classList.remove("isOpen");
-  metaModal.setAttribute("aria-hidden","true");
-}
-
-metaSave.addEventListener("click", async ()=>{
-  metaStatus.textContent = "Saving…";
-  try{
-    const links = mLinks.value
-      .split("\n")
-      .map(s=>s.trim())
-      .filter(Boolean)
-      .map(line=>{
-        const [label, url] = line.split("|").map(x=>x.trim());
-        return { label: label || "Link", url: url || "#" };
-      });
-
-    const payload = {
-      name: mName.value.trim() || "ANNA",
-      tagline: mTagline.value.trim() || "AI Visual Portfolio",
-      title: mTitle.value.trim() || "Portfolio",
-      subtitle: mSubtitle.value.trim() || "Infinite board of AI works",
-      links
-    };
-
-    // save via function (no direct write policy needed)
-    const { error } = await sb.rpc("set_site_meta", { p_key:"main", p_value: payload });
-    if(error) throw error;
-
-    metaStatus.textContent = "Saved ✓";
-    await loadMeta();
-    setTimeout(()=> metaStatus.textContent="", 1200);
-  }catch(e){
-    console.error(e);
-    metaStatus.textContent = "Error";
-    alert(e.message || e);
-  }
-});
-
-// ===== Load works from Storage (pagination)
+// pagination
+let pageSize = 18;
 let page = 0;
 let loading = false;
-let done = false;
-const PAGE_SIZE = 24;
+let reachedEnd = false;
 
-const works = []; // {path,url,type,title,caption,position,views,likes,likedByMe}
+init().catch(console.error);
 
-async function listStoragePage(){
-  const { data, error } = await sb.storage.from(BUCKET).list("", {
-    limit: PAGE_SIZE,
-    offset: page * PAGE_SIZE,
-    sortBy: { column: "created_at", order: "desc" }
-  });
-  if(error) throw error;
+async function init(){
+  bindViewer();
+  await loadMeta();
+  await loadNextPage();
 
-  // filter folders + hidden
-  const files = (data || []).filter(x => x.name && !x.name.endsWith("/"));
-  return files.map(f => f.name);
+  loadMoreBtn.addEventListener("click", loadNextPage);
+
+  // infinite scroll
+  const io = new IntersectionObserver((entries)=>{
+    if(entries.some(e=>e.isIntersecting)){
+      loadNextPage();
+    }
+  }, {rootMargin:"600px"});
+  io.observe(loadMoreBtn);
 }
 
-function guessTypeByName(name){
-  const n = name.toLowerCase();
-  if(n.endsWith(".mp4") || n.endsWith(".mov") || n.endsWith(".webm")) return "video";
-  return "image";
+async function loadMeta(){
+  const { data, error } = await sb.from("site_meta").select("key,value").in("key", ["name","tagline","title","subtitle","links"]);
+  if(error){ console.warn(error); return; }
+
+  const m = Object.fromEntries((data||[]).map(r=>[r.key, r.value]));
+  if(m.name) metaName.textContent = m.name;
+  if(m.tagline) metaTagline.textContent = m.tagline;
+  if(m.title) metaTitle.textContent = m.title;
+  if(m.subtitle) metaSubtitle.textContent = m.subtitle;
+
+  metaLinks.innerHTML = "";
+  const links = (m.links && Array.isArray(m.links.items)) ? m.links.items : [];
+  for(const item of links){
+    const a = document.createElement("a");
+    a.className = "pill";
+    a.href = item.url;
+    a.target = "_blank";
+    a.rel = "noopener";
+    a.textContent = item.label;
+    metaLinks.appendChild(a);
+  }
+}
+
+async function loadNextPage(){
+  if(loading || reachedEnd) return;
+  loading = true;
+  loadMoreBtn.textContent = "Loading…";
+
+  const from = page * pageSize;
+  const to = from + pageSize - 1;
+
+  // works are stored in table `works`
+  const { data, error } = await sb
+    .from("works")
+    .select("id, title, caption, media_path, media_type, created_at")
+    .order("position", { ascending: true })
+    .range(from, to);
+
+  if(error){
+    console.warn(error);
+    loadMoreBtn.textContent = "Load more";
+    loading = false;
+    return;
+  }
+
+  if(!data || data.length === 0){
+    reachedEnd = true;
+    loadMoreBtn.textContent = "End";
+    loadMoreBtn.disabled = true;
+    return;
+  }
+
+  for(const item of data){
+    board.appendChild(renderCard(item));
+    // view count: once per session per item
+    bumpView(item.media_path).catch(()=>{});
+  }
+
+  page++;
+  loadMoreBtn.textContent = "Load more";
+  loading = false;
 }
 
 function publicUrl(path){
-  const { data } = sb.storage.from(BUCKET).getPublicUrl(path);
-  return data.publicUrl;
+  // Works bucket must be PUBLIC, or use signed urls (we keep simple)
+  return `${SUPABASE_URL}/storage/v1/object/public/Works/${encodeURIComponent(path)}`;
 }
 
-async function fetchCounts(paths){
-  if(paths.length === 0) return;
+function renderCard(item){
+  const card = document.createElement("article");
+  card.className = "card";
+  card.dataset.path = item.media_path;
 
-  // views
-  const { data: vrows } = await sb.from("work_stats").select("media_path,views").in("media_path", paths);
-  const viewsMap = new Map((vrows||[]).map(r=>[r.media_path, r.views]));
+  const url = publicUrl(item.media_path);
 
-  // likes counts
-  const { data: lrows } = await sb.from("likes").select("media_path,client_id").in("media_path", paths);
-  const likeCountMap = new Map();
-  const likedMap = new Map();
+  const media = (item.media_type === "video")
+    ? makeVideo(url)
+    : makeImg(url);
 
-  (lrows||[]).forEach(r=>{
-    likeCountMap.set(r.media_path, (likeCountMap.get(r.media_path)||0) + 1);
-    if(r.client_id === clientId) likedMap.set(r.media_path, true);
+  const meta = document.createElement("div");
+  meta.className = "meta";
+
+  const top = document.createElement("div");
+  top.className = "meta__top";
+
+  const title = document.createElement("div");
+  title.className = "meta__title";
+  title.textContent = item.title || "Untitled";
+
+  const stats = document.createElement("div");
+  stats.className = "stats";
+
+  const viewsEl = document.createElement("span");
+  viewsEl.textContent = "👁 0";
+
+  const likeBtn = document.createElement("button");
+  likeBtn.className = "iconBtn";
+  likeBtn.type = "button";
+  likeBtn.innerHTML = `❤️ <span>0</span>`;
+  likeBtn.addEventListener("click", (e)=>{
+    e.stopPropagation();
+    toggleLike(item.media_path, likeBtn).catch(console.warn);
   });
 
-  // ordering
-  const { data: orows } = await sb.from("work_order").select("media_path,position").in("media_path", paths);
-  const posMap = new Map((orows||[]).map(r=>[r.media_path, r.position]));
+  stats.appendChild(viewsEl);
+  stats.appendChild(likeBtn);
 
-  // apply
-  works.forEach(w=>{
-    if(paths.includes(w.path)){
-      w.views = viewsMap.get(w.path) || 0;
-      w.likes = likeCountMap.get(w.path) || 0;
-      w.likedByMe = likedMap.get(w.path) || false;
-      w.position = posMap.get(w.path) ?? 100000;
-    }
+  top.appendChild(title);
+  top.appendChild(stats);
+
+  const caption = document.createElement("div");
+  caption.className = "meta__caption";
+  caption.textContent = item.caption || "";
+
+  meta.appendChild(top);
+  if(item.caption) meta.appendChild(caption);
+
+  card.appendChild(media);
+  card.appendChild(meta);
+
+  card.addEventListener("click", ()=>{
+    openViewer(item.media_type, url);
+  });
+
+  // hydrate counters
+  hydrateStats(item.media_path, viewsEl, likeBtn).catch(()=>{});
+
+  return card;
+}
+
+function makeImg(url){
+  const img = document.createElement("img");
+  img.className = "media";
+  img.loading = "lazy";
+  img.src = url;
+  img.alt = "";
+  return img;
+}
+
+function makeVideo(url){
+  const v = document.createElement("video");
+  v.className = "media";
+  v.src = url;
+  v.controls = false;
+  v.muted = true;
+  v.loop = true;
+  v.playsInline = true;
+  v.autoplay = true;
+  v.addEventListener("mouseenter", ()=>v.play().catch(()=>{}));
+  v.addEventListener("mouseleave", ()=>v.pause());
+  return v;
+}
+
+// ====== VIEWER ======
+function bindViewer(){
+  viewerClose.addEventListener("click", closeViewer);
+  viewer.addEventListener("click", (e)=>{
+    if(e.target === viewer) closeViewer();
+  });
+  window.addEventListener("keydown", (e)=>{
+    if(e.key === "Escape") closeViewer();
   });
 }
 
-function render(){
-  // stable order: DB position first, then fallback by created order in list (already desc)
-  const sorted = works.slice().sort((a,b)=> (a.position??100000) - (b.position??100000));
-
-  board.innerHTML = "";
-  sorted.forEach(w=>{
-    const card = document.createElement("article");
-    card.className = "card";
-    card.dataset.path = w.path;
-
-    const media = w.type === "video"
-      ? `<video src="${w.url}" muted playsinline loop preload="metadata"></video>`
-      : `<img src="${w.url}" loading="lazy" alt="">`;
-
-    card.innerHTML = `
-      <div class="card__media">${media}</div>
-      <div class="card__footer">
-        <div class="card__title">${escapeHTML(w.title || niceTitle(w.path))}</div>
-        <div class="card__meta">
-          <span class="badge">❤️ ${w.likes||0}</span>
-          <span class="badge">👁 ${w.views||0}</span>
-        </div>
-      </div>
-    `;
-
-    // hover play
-    const vid = card.querySelector("video");
-    if(vid){
-      card.addEventListener("mouseenter", ()=> vid.play().catch(()=>{}));
-      card.addEventListener("mouseleave", ()=> { vid.pause(); vid.currentTime = 0; });
-    }
-
-    card.addEventListener("click", ()=> openLightbox(w));
-    board.appendChild(card);
-  });
-}
-
-function niceTitle(path){
-  const base = path.replace(/\.[^.]+$/,"").replaceAll("_"," ");
-  return base.length > 38 ? base.slice(0,38) + "…" : base;
-}
-function escapeHTML(s){
-  return String(s).replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;");
-}
-
-// ===== Infinite load
-async function loadMore(){
-  if(loading || done) return;
-  loading = true;
-  loader.style.display = "inline-block";
-  try{
-    const names = await listStoragePage();
-    if(names.length === 0){ done = true; loader.textContent = "End"; return; }
-
-    const batch = names.map(path=>{
-      const type = guessTypeByName(path);
-      return {
-        path,
-        url: publicUrl(path),
-        type,
-        title: "",
-        caption: "",
-        position: 100000,
-        likes: 0,
-        views: 0,
-        likedByMe: false
-      };
-    });
-
-    works.push(...batch);
-
-    await fetchCounts(names);
-    render();
-
-    page++;
-    loader.textContent = "Loading…";
-  }catch(e){
-    console.error(e);
-    loader.textContent = "Load error";
-  }finally{
-    loading = false;
-    if(!done) loader.style.display = "none";
-  }
-}
-
-const io = new IntersectionObserver((entries)=>{
-  entries.forEach(e=>{
-    if(e.isIntersecting) loadMore();
-  });
-},{ root:null, threshold: 0.1 });
-
-io.observe(loader);
-
-// ===== Lightbox behavior (no browser back)
-let current = null;
-
-function openLightbox(w){
-  current = w;
-  lightbox.classList.add("isOpen");
-  lightbox.setAttribute("aria-hidden","false");
-  document.body.style.overflow = "hidden";
-
-  lbInner.innerHTML = "";
-  if(w.type === "video"){
+function openViewer(type, url){
+  viewerBody.innerHTML = "";
+  if(type === "video"){
     const v = document.createElement("video");
-    v.src = w.url;
+    v.src = url;
     v.controls = true;
     v.autoplay = true;
     v.playsInline = true;
-    v.style.maxHeight = "100%";
-    lbInner.appendChild(v);
+    viewerBody.appendChild(v);
   }else{
     const img = document.createElement("img");
-    img.src = w.url;
-    lbInner.appendChild(img);
+    img.src = url;
+    viewerBody.appendChild(img);
+  }
+  viewer.setAttribute("aria-hidden", "false");
+}
+
+function closeViewer(){
+  viewer.setAttribute("aria-hidden", "true");
+  viewerBody.innerHTML = "";
+}
+
+// ====== STATS (likes/views) ======
+// Tables created by твоим SQL: work_stats(media_path, views), likes(media_path, client_id)
+
+async function hydrateStats(path, viewsEl, likeBtn){
+  const [{ data: s1 }, { data: s2 }] = await Promise.all([
+    sb.from("work_stats").select("views").eq("media_path", path).maybeSingle(),
+    sb.from("likes").select("client_id").eq("media_path", path).eq("client_id", clientId).maybeSingle(),
+  ]);
+
+  const views = s1?.views ?? 0;
+  viewsEl.textContent = `👁 ${views}`;
+
+  // likes count
+  const { count } = await sb.from("likes").select("*", { count:"exact", head:true }).eq("media_path", path);
+  const n = count ?? 0;
+  likeBtn.querySelector("span").textContent = String(n);
+
+  // state
+  if(s2?.client_id) likeBtn.dataset.liked = "1";
+  else delete likeBtn.dataset.liked;
+}
+
+async function bumpView(path){
+  const key = `viewed_${path}`;
+  if(sessionStorage.getItem(key)) return;
+  sessionStorage.setItem(key, "1");
+
+  // increment with upsert + update (simple)
+  // 1) ensure row exists
+  await sb.from("work_stats").upsert({ media_path: path, views: 0 }, { onConflict:"media_path" });
+  // 2) increment
+  const { data } = await sb.from("work_stats").select("views").eq("media_path", path).maybeSingle();
+  const v = (data?.views ?? 0) + 1;
+  await sb.from("work_stats").update({ views: v }).eq("media_path", path);
+}
+
+async function toggleLike(path, btn){
+  const liked = btn.dataset.liked === "1";
+
+  if(liked){
+    await sb.from("likes").delete().eq("media_path", path).eq("client_id", clientId);
+    delete btn.dataset.liked;
+  }else{
+    await sb.from("likes").upsert({ media_path: path, client_id: clientId });
+    btn.dataset.liked = "1";
   }
 
-  lbTitle.textContent = w.title || niceTitle(w.path);
-  likeCount.textContent = String(w.likes||0);
-  viewCount.textContent = String(w.views||0);
-  likeBtn.classList.toggle("liked", !!w.likedByMe);
-
-  // increment view in DB
-  sb.rpc("increment_view", { p_media_path: w.path }).then(async ()=>{
-    // refresh view count for this item
-    const { data } = await sb.from("work_stats").select("views").eq("media_path", w.path).maybeSingle();
-    w.views = data?.views || (w.views||0)+1;
-    viewCount.textContent = String(w.views||0);
-    render(); // refresh badges
-  }).catch(console.error);
+  const { count } = await sb.from("likes").select("*", { count:"exact", head:true }).eq("media_path", path);
+  btn.querySelector("span").textContent = String(count ?? 0);
 }
-
-function closeLightbox(){
-  lightbox.classList.remove("isOpen");
-  lightbox.setAttribute("aria-hidden","true");
-  document.body.style.overflow = "";
-  lbInner.innerHTML = "";
-  current = null;
-}
-
-lbClose.addEventListener("click", closeLightbox);
-lightbox.addEventListener("click", (e)=>{ if(e.target === lightbox) closeLightbox(); });
-window.addEventListener("keydown", (e)=>{ if(e.key === "Escape" && current) closeLightbox(); });
-
-// Like toggle (no login)
-likeBtn.addEventListener("click", async ()=>{
-  if(!current) return;
-  try{
-    if(current.likedByMe){
-      const { error } = await sb.from("likes").delete().eq("media_path", current.path).eq("client_id", clientId);
-      if(error) throw error;
-      current.likedByMe = false;
-      current.likes = Math.max(0, (current.likes||0) - 1);
-    }else{
-      const { error } = await sb.from("likes").insert({ media_path: current.path, client_id: clientId });
-      if(error) throw error
