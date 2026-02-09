@@ -2,91 +2,40 @@
 <html lang="ru">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Anna — Portfolio</title>
-  <link rel="stylesheet" href="styles.css" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>ANNA — AI Visual Portfolio</title>
+  <link rel="stylesheet" href="./styles.css" />
 </head>
 <body>
-  <div class="bg"></div>
-  <div class="noise"></div>
-
-  <header class="top glass">
+  <header class="topbar glass">
     <div class="brand">
-      <div class="brand__name" id="metaName">ANNA</div>
-      <div class="brand__desc" id="metaTagline">AI Visual Portfolio</div>
+      <div id="metaName" class="brand__name">ANNA</div>
+      <div id="metaTagline" class="brand__tagline">AI Visual Portfolio</div>
     </div>
-
-    <nav class="links" id="metaLinks"></nav>
-
-    <button class="ghost small" id="editMetaBtn" title="Только для тебя">Edit</button>
+    <a class="topbar__link" href="./admin.html" rel="nofollow">Admin</a>
   </header>
 
   <main class="wrap">
     <section class="hero glass">
       <h1 id="metaTitle">Portfolio</h1>
-      <p class="lead" id="metaSubtitle">Infinite board of AI works</p>
+      <p id="metaSubtitle">Infinite board of AI works</p>
+
+      <div id="metaLinks" class="links"></div>
     </section>
 
-    <section class="boardWrap">
-      <div id="board" class="board"></div>
-      <div id="loader" class="loader glass">Loading…</div>
+    <section class="boardShell">
+      <div id="board" class="masonry"></div>
+      <button id="loadMore" class="btn subtle" type="button">Load more</button>
     </section>
   </main>
 
-  <!-- Lightbox -->
-  <div id="lightbox" class="lightbox" aria-hidden="true">
-    <button class="lbClose" id="lbClose" aria-label="Close">✕</button>
-    <div class="lbInner" id="lbInner"></div>
-    <div class="lbBar glass" id="lbBar">
-      <div class="lbTitle" id="lbTitle"></div>
-      <div class="lbStats">
-        <button class="likeBtn" id="likeBtn">❤️ <span id="likeCount">0</span></button>
-        <span class="views">👁 <span id="viewCount">0</span></span>
-      </div>
-    </div>
-  </div>
-
-  <!-- Meta editor (only you) -->
-  <div id="metaModal" class="modal" aria-hidden="true">
-    <div class="modalCard glass">
-      <div class="modalHead">
-        <div class="modalTitle">Edit content</div>
-        <button class="ghost small" id="metaClose">Close</button>
-      </div>
-
-      <div class="grid2">
-        <label class="field">
-          <span>Name</span>
-          <input id="mName" placeholder="ANNA" />
-        </label>
-        <label class="field">
-          <span>Tagline</span>
-          <input id="mTagline" placeholder="AI Visual Portfolio" />
-        </label>
-
-        <label class="field">
-          <span>Title</span>
-          <input id="mTitle" placeholder="Portfolio" />
-        </label>
-        <label class="field">
-          <span>Subtitle</span>
-          <input id="mSubtitle" placeholder="Infinite board of AI works" />
-        </label>
-
-        <label class="field fieldFull">
-          <span>Links (one per line: Label|URL)</span>
-          <textarea id="mLinks" rows="4" placeholder="Email|mailto:you@email.com&#10;Instagram|https://instagram.com/..."></textarea>
-        </label>
-      </div>
-
-      <div class="row">
-        <button class="btn" id="metaSave">Save</button>
-        <span class="hint" id="metaStatus"></span>
-      </div>
-    </div>
+  <!-- fullscreen viewer -->
+  <div id="viewer" class="viewer" aria-hidden="true">
+    <button id="viewerClose" class="viewer__close" type="button" aria-label="Close">✕</button>
+    <div id="viewerBody" class="viewer__body"></div>
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="app.js"></script>
+  <script src="./app.js"></script>
 </body>
 </html>
