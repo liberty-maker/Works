@@ -1,27 +1,28 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="ru">
 <head>
-  <meta charset="utf-8" />
+  <meta charset="UTF-8" />
   <title>Admin</title>
-  <link rel="stylesheet" href="./styles.css" />
+  <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
-  <main class="wrap glass" style="margin-top:40px;padding:20px">
-    <h2>Admin</h2>
-    <input id="email" placeholder="email"><br><br>
-    <input id="password" type="password" placeholder="password"><br><br>
-    <button id="login">Login</button>
-    <hr>
-    <input id="file" type="file">
-    <select id="type">
-      <option value="image">image</option>
-      <option value="video">video</option>
-    </select>
-    <button id="upload">Upload</button>
-    <div id="status"></div>
-  </main>
 
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="./admin.js"></script>
+<div class="card">
+  <h2>Admin</h2>
+
+  <input type="password" id="password" placeholder="Admin password" />
+  <button onclick="login()">Login</button>
+
+  <div id="admin-panel" style="display:none; margin-top:20px;">
+    <input type="file" id="file" />
+    <select id="type">
+      <option value="image">Image</option>
+      <option value="video">Video</option>
+    </select>
+    <button onclick="upload()">Upload</button>
+  </div>
+</div>
+
+<script src="admin.js"></script>
 </body>
 </html>
