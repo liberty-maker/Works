@@ -1,27 +1,22 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="ru">
 <head>
-  <meta charset="UTF-8" />
-  <title>Admin</title>
+  <meta charset="utf-8" />
+  <title>Admin — Anna</title>
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
 
-<div class="card">
-  <h2>Admin</h2>
+<main class="glass admin">
+  <h2>Admin board</h2>
 
-  <input type="password" id="password" placeholder="Admin password" />
-  <button onclick="login()">Login</button>
+  <input type="file" id="fileInput" multiple />
+  <button id="add">Add to board</button>
 
-  <div id="admin-panel" style="display:none; margin-top:20px;">
-    <input type="file" id="file" />
-    <select id="type">
-      <option value="image">Image</option>
-      <option value="video">Video</option>
-    </select>
-    <button onclick="upload()">Upload</button>
-  </div>
-</div>
+  <p class="hint">Drag items to reorder</p>
+
+  <div id="adminGallery" class="gallery"></div>
+</main>
 
 <script src="admin.js"></script>
 </body>
