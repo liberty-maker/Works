@@ -2,102 +2,92 @@
 <html lang="ru">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Admin — ANNA</title>
   <link rel="stylesheet" href="./styles.css" />
 </head>
-<body>
-  <header class="topbar glass">
-    <div class="brand">
-      <div class="brand__name">Admin board</div>
-      <div class="brand__tagline">Загрузка + порядок + тексты сайта</div>
+<body class="adminPage">
+  <header class="glass topbar">
+    <div>
+      <div class="brand">Admin board</div>
+      <div class="muted">Загрузка + порядок + тексты сайта</div>
     </div>
-    <a class="topbar__link" href="./index.html">Back</a>
+    <a class="pill" href="./index.html">Back</a>
   </header>
 
-  <main class="wrap">
-    <section class="glass panel">
-      <h2 class="h2">Site meta (текст + контакты)</h2>
-
-      <div class="grid2">
-        <label class="field">
-          <span>Name</span>
-          <input id="mName" placeholder="ANNA" />
-        </label>
-        <label class="field">
-          <span>Tagline</span>
-          <input id="mTagline" placeholder="AI Visual Portfolio" />
-        </label>
-        <label class="field">
-          <span>Title</span>
-          <input id="mTitle" placeholder="Portfolio" />
-        </label>
-        <label class="field">
-          <span>Subtitle</span>
-          <input id="mSubtitle" placeholder="Infinite board of AI works" />
-        </label>
-      </div>
-
-      <label class="field">
-        <span>Links (по одному на строку: “Label | https://…”) </span>
-        <textarea id="mLinks" rows="4" placeholder="Instagram | https://instagram.com/…"></textarea>
-      </label>
-
-      <div class="row">
-        <button id="saveMeta" class="btn" type="button">Save meta</button>
-        <span id="metaStatus" class="muted"></span>
-      </div>
+  <main class="wrap adminWrap">
+    <section class="glass card">
+      <h2>Admin access</h2>
+      <p class="muted">Вставь токен (это твой “кабинет” без Supabase Auth).</p>
+      <input id="adminToken" placeholder="ADMIN_TOKEN" />
+      <button id="saveToken" class="pill">Save token</button>
+      <div id="tokenStatus" class="muted"></div>
     </section>
 
-    <section class="glass panel">
-      <h2 class="h2">Add work</h2>
-
+    <section class="glass card">
+      <h2>Site meta (текст + контакты)</h2>
       <div class="grid2">
-        <label class="field">
-          <span>File</span>
-          <input id="file" type="file" accept="image/*,video/*" />
-        </label>
+        <div>
+          <label>Name</label>
+          <input id="metaName" placeholder="ANNA" />
+        </div>
+        <div>
+          <label>Tagline</label>
+          <input id="metaTagline" placeholder="AI Visual Portfolio" />
+        </div>
+        <div>
+          <label>Title</label>
+          <input id="metaTitle" placeholder="Portfolio" />
+        </div>
+        <div>
+          <label>Subtitle</label>
+          <input id="metaSubtitle" placeholder="Infinite board of AI works" />
+        </div>
+      </div>
+      <label>Links (по одному на строку: “Label | https://…”) </label>
+      <textarea id="metaLinks" rows="4" placeholder="Instagram | https://instagram.com/..."></textarea>
+      <button id="saveMeta" class="pill">Save meta</button>
+      <div id="metaStatus" class="muted"></div>
+    </section>
 
-        <label class="field">
-          <span>Type</span>
+    <section class="glass card">
+      <h2>Add work</h2>
+      <div class="grid2">
+        <div>
+          <label>File</label>
+          <input id="file" type="file" />
+        </div>
+        <div>
+          <label>Type</label>
           <select id="type">
             <option value="image">image</option>
             <option value="video">video</option>
           </select>
-        </label>
-
-        <label class="field">
-          <span>Title</span>
+        </div>
+        <div>
+          <label>Title</label>
           <input id="title" placeholder="Vogue Study #01" />
-        </label>
-
-        <label class="field">
-          <span>Caption (optional)</span>
+        </div>
+        <div>
+          <label>Caption (optional)</label>
           <input id="caption" placeholder="short vibe / prompt / note" />
-        </label>
+        </div>
       </div>
-
-      <div class="row">
-        <button id="upload" class="btn" type="button">Upload + Add</button>
-        <span id="uploadStatus" class="muted"></span>
-      </div>
+      <button id="upload" class="pill">Upload + Add</button>
+      <div id="uploadStatus" class="muted"></div>
     </section>
 
-    <section class="glass panel">
-      <h2 class="h2">Board (drag to reorder)</h2>
-      <div id="adminBoard" class="masonry admin"></div>
+    <section class="glass card">
       <div class="row">
-        <button id="saveOrder" class="btn subtle" type="button">Save order</button>
-        <span id="orderStatus" class="muted"></span>
+        <h2>Board (drag to reorder)</h2>
+        <button id="saveOrder" class="pill">Save order</button>
       </div>
+      <div id="adminBoard" class="masonry adminBoard"></div>
+      <div id="orderStatus" class="muted"></div>
     </section>
   </main>
 
-  <div id="viewer" class="viewer" aria-hidden="true">
-    <button id="viewerClose" class="viewer__close" type="button" aria-label="Close">✕</button>
-    <div id="viewerBody" class="viewer__body"></div>
-  </div>
-
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="./admin.js"></script>
 </body>
 </html>
