@@ -2,37 +2,34 @@
 <html lang="ru">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>ANNA — AI Visual Portfolio</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>ANNA — Portfolio</title>
   <link rel="stylesheet" href="./styles.css" />
 </head>
 <body>
-  <header class="topbar glass">
-    <div class="brand">
-      <div id="metaName" class="brand__name">ANNA</div>
-      <div id="metaTagline" class="brand__tagline">AI Visual Portfolio</div>
+  <header class="glass topbar">
+    <div>
+      <div class="brand" id="name">ANNA</div>
+      <div class="muted" id="tagline">AI Visual Portfolio</div>
     </div>
-    <a class="topbar__link" href="./admin.html" rel="nofollow">Admin</a>
+    <a class="pill" href="./admin.html" id="adminLink" title="private">Edit</a>
   </header>
 
+  <section class="glass hero">
+    <h1 id="title">Portfolio</h1>
+    <p class="muted" id="subtitle">Infinite board of AI works</p>
+    <div class="links" id="links"></div>
+  </section>
+
   <main class="wrap">
-    <section class="hero glass">
-      <h1 id="metaTitle">Portfolio</h1>
-      <p id="metaSubtitle">Infinite board of AI works</p>
-
-      <div id="metaLinks" class="links"></div>
-    </section>
-
-    <section class="boardShell">
-      <div id="board" class="masonry"></div>
-      <button id="loadMore" class="btn subtle" type="button">Load more</button>
-    </section>
+    <div id="masonry" class="masonry"></div>
+    <button id="loadMore" class="pill loadMore">Load more</button>
+    <div id="loader" class="muted loader">Loading…</div>
   </main>
 
-  <!-- fullscreen viewer -->
   <div id="viewer" class="viewer" aria-hidden="true">
-    <button id="viewerClose" class="viewer__close" type="button" aria-label="Close">✕</button>
-    <div id="viewerBody" class="viewer__body"></div>
+    <button id="viewerClose" class="viewerClose" aria-label="Close">✕</button>
+    <div id="viewerBody" class="viewerBody"></div>
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
