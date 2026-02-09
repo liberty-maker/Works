@@ -2,22 +2,86 @@
 <html lang="ru">
 <head>
   <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Admin — Anna</title>
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
+  <div class="bg"></div>
+  <div class="noise"></div>
 
-<main class="glass admin">
-  <h2>Admin board</h2>
+  <main class="wrap">
+    <section class="hero glass">
+      <h1>Admin board</h1>
+      <p class="lead">Загрузка фото/видео → Supabase Storage (Works) → моментально на сайте.</p>
+      <p class="hint">Drag items to reorder. Порядок сохранится для всех.</p>
+    </section>
 
-  <input type="file" id="fileInput" multiple />
-  <button id="add">Add to board</button>
+    <section class="glass adminPanel">
+      <h2 class="panelTitle">Supabase (1 раз)</h2>
 
-  <p class="hint">Drag items to reorder</p>
+      <div class="grid2">
+        <label class="field">
+          <span>Project URL</span>
+          <input id="sbUrl" placeholder="https://xxxx.supabase.co" />
+        </label>
+        <label class="field">
+          <span>Publishable key</span>
+          <input id="sbKey" placeholder="sb_publishable_..." />
+        </label>
+        <label class="field fieldFull">
+          <span>Bucket</span>
+          <input id="sbBucket" value="Works" />
+        </label>
+      </div>
 
-  <div id="adminGallery" class="gallery"></div>
-</main>
+      <div class="row">
+        <button class="btn" id="saveSb">Save</button>
+        <span class="hint">Bucket должен быть Works (с большой W).</span>
+      </div>
+    </section>
 
-<script src="admin.js"></script>
+    <section class="glass adminPanel">
+      <h2 class="panelTitle">Add</h2>
+
+      <div class="grid2">
+        <label class="field">
+          <span>File</span>
+          <input id="file" type="file" accept="image/*,video/*" />
+        </label>
+
+        <label class="field">
+          <span>Type</span>
+          <select id="type">
+            <option value="image">image</option>
+            <option value="video">video</option>
+          </select>
+        </label>
+
+        <label class="field">
+          <span>Title</span>
+          <input id="title" placeholder="Vogue Study #01" />
+        </label>
+
+        <label class="field">
+          <span>Caption</span>
+          <input id="caption" placeholder="optional" />
+        </label>
+      </div>
+
+      <div class="row">
+        <button class="btn" id="upload">Upload + Add</button>
+        <span class="hint" id="status"></span>
+      </div>
+    </section>
+
+    <section class="glass adminPanel">
+      <h2 class="panelTitle">Board</h2>
+      <div id="adminBoard" class="board adminBoard"></div>
+    </section>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="admin.js"></script>
 </body>
 </html>
