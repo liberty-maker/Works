@@ -1,101 +1,114 @@
+// functions/api/add-work.js
+// POST multipart/form-data: file, title, caption, type
+// Header: x-admin-token: <ADMIN_TOKEN>
+
 export async function onRequestPost({ request, env }) {
   try {
-    const need = ["SUPABASE_URL", "SUPABASE_SERVICE_ROLE_KEY", "ADMIN_TOKEN"];
-    for (const k of need) if (!env[k]) return json({ ok:false, error:`Missing env var: ${k}` }, 500);
-
+    // --- auth ---
     const token = request.headers.get("x-admin-token") || "";
-    if (token !== env.ADMIN_TOKEN) return json({ ok:false, error:"Unauthorized" }, 401);
-
-    const form = await request.formData();
-    const file = form.get("file");
-    const type = (form.get("type") || "image").toString();
-    const title = (form.get("title") || "").toString();
-    const caption = (form.get("caption") || "").toString();
-
-    if (!file || typeof file === "string") return json({ ok:false, error:"No file" }, 400);
-
-    const ext = guessExt(file.name, type);
-    const safeBase = safeName(file.name.replace(/\.[^/.]+$/, "")) || "work";
-    const stamp = Date.now();
-    const media_path = `${stamp}-${safeBase}.${ext}`;
-
-    // 1) Upload to Storage (bucket Works)
-    const uploadUrl = `${env.SUPABASE_URL}/storage/v1/object/Works/${encodeURIComponent(media_path)}`;
-    const upRes = await fetch(uploadUrl, {
-      method: "POST",
-      headers: {
-        "authorization": `Bearer ${env.SUPABASE_SERVICE_ROLE_KEY}`,
-        "apikey": env.SUPABASE_SERVICE_ROLE_KEY,
-        "content-type": file.type || (type === "video" ? "video/mp4" : "image/jpeg"),
-        "x-upsert": "false",
-      },
-      body: await file.arrayBuffer(),
-    });
-
-    if (!upRes.ok) {
-      const t = await upRes.text();
-      return json({ ok:false, error:"Storage upload failed", details:t }, 500);
+    if (!env.ADMIN_TOKEN || token !== env.ADMIN_TOKEN) {
+      return json({ ok: false, error: "Unauthorized" }, 401);
     }
 
-    // 2) Insert into works
-    const worksRes = await fetch(`${env.SUPABASE_URL}/rest/v1/works`, {
+    // --- env ---
+    const SUPABASE_URL = env.SUPABASE_URL;
+    const SERVICE_KEY = env.SUPABASE_SERVICE_ROLE_KEY;
+    const BUCKET = env.SUPABASE_BUCKET || "Works";
+
+    if (!SUPABASE_URL || !SERVICE_KEY) {
+      return json({ ok: false, error: "Missing env vars (SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY)" }, 500);
+    }
+
+    // --- parse form ---
+    const form = await request.formData();
+    const file = form.get("file");
+    const title = (form.get("title") || "").toString().trim();
+    const caption = (form.get("caption") || "").toString().trim();
+    const type = (form.get("type") || "image").toString();
+
+    if (!file || typeof file === "string") {
+      return json({ ok: false, error: "No file uploaded" }, 400);
+    }
+
+    // filename -> safe path
+    const originalName = (file.name || "file").toString();
+    const ext = originalName.includes(".") ? originalName.split(".").pop() : "";
+    const ts = Date.now();
+    const rand = Math.random().toString(16).slice(2);
+    const safeExt = ext ? "." + ext.replace(/[^a-z0-9]/gi, "").slice(0, 8) : "";
+    const path = `${ts}-${rand}${safeExt}`;
+
+    // --- upload to Supabase Storage (service role) ---
+    const uploadUrl = `${SUPABASE_URL}/storage/v1/object/${encodeURIComponent(BUCKET)}/${encodeURIComponent(path)}`;
+
+    const up = await fetch(uploadUrl, {
       method: "POST",
       headers: {
-        "authorization": `Bearer ${env.SUPABASE_SERVICE_ROLE_KEY}`,
-        "apikey": env.SUPABASE_SERVICE_ROLE_KEY,
+        "Authorization": `Bearer ${SERVICE_KEY}`,
+        "apikey": SERVICE_KEY,
+        "content-type": file.type || "application/octet-stream",
+        "x-upsert": "false",
+      },
+      body: file,
+    });
+
+    if (!up.ok) {
+      const t = await up.text().catch(() => "");
+      return json({ ok: false, error: "Storage upload failed", details: t }, 500);
+    }
+
+    // public URL (bucket должен быть PUBLIC)
+    const publicUrl = `${SUPABASE_URL}/storage/v1/object/public/${BUCKET}/${path}`;
+
+    // --- insert into DB (public.works) ---
+    const ins = await fetch(`${SUPABASE_URL}/rest/v1/works`, {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${SERVICE_KEY}`,
+        "apikey": SERVICE_KEY,
         "content-type": "application/json",
         "prefer": "return=representation",
       },
-      body: JSON.stringify([{ media_path, type, title, caption }]),
+      body: JSON.stringify([{
+        media_path: path,
+        media_type: type,
+        title,
+        caption,
+      }]),
     });
 
-    if (!worksRes.ok) {
-      const t = await worksRes.text();
-      return json({ ok:false, error:"DB insert works failed", details:t, media_path }, 500);
+    if (!ins.ok) {
+      const t = await ins.text().catch(() => "");
+      return json({ ok: false, error: "DB insert failed", details: t, path, publicUrl }, 500);
     }
 
-    // 3) Set default order (append to end)
-    const pos = 100000 + stamp % 100000; // простая “в конец”
-    const ordRes = await fetch(`${env.SUPABASE_URL}/rest/v1/work_order`, {
+    const data = await ins.json();
+
+    // ensure order row exists
+    await fetch(`${SUPABASE_URL}/rest/v1/work_order`, {
       method: "POST",
       headers: {
-        "authorization": `Bearer ${env.SUPABASE_SERVICE_ROLE_KEY}`,
-        "apikey": env.SUPABASE_SERVICE_ROLE_KEY,
+        "Authorization": `Bearer ${SERVICE_KEY}`,
+        "apikey": SERVICE_KEY,
         "content-type": "application/json",
         "prefer": "resolution=merge-duplicates",
       },
-      body: JSON.stringify([{ media_path, position: pos }]),
-    });
+      body: JSON.stringify([{ media_path: path, position: 100000 }]),
+    }).catch(() => {});
 
-    if (!ordRes.ok) {
-      const t = await ordRes.text();
-      return json({ ok:false, error:"DB upsert order failed", details:t, media_path }, 500);
-    }
+    return json({ ok: true, path, publicUrl, row: data?.[0] || null }, 200);
 
-    return json({ ok:true, media_path }, 200);
   } catch (e) {
-    return json({ ok:false, error: String(e?.message || e) }, 500);
+    return json({ ok: false, error: String(e?.message || e) }, 500);
   }
 }
 
-function json(obj, status=200) {
-  return new Response(JSON.stringify(obj), {
+function json(obj, status = 200) {
+  return new Response(JSON.stringify(obj, null, 2), {
     status,
-    headers: { "content-type":"application/json; charset=utf-8" }
+    headers: {
+      "content-type": "application/json; charset=utf-8",
+      "cache-control": "no-store",
+    },
   });
-}
-
-function safeName(s) {
-  return (s || "")
-    .toLowerCase()
-    .replace(/[^a-z0-9-_]+/g, "-")
-    .replace(/-+/g, "-")
-    .replace(/^-|-$/g, "")
-    .slice(0, 60);
-}
-
-function guessExt(filename, type) {
-  const m = (filename || "").toLowerCase().match(/\.([a-z0-9]+)$/);
-  if (m?.[1]) return m[1];
-  return type === "video" ? "mp4" : "jpg";
 }
