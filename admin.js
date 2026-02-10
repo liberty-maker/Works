@@ -1,3 +1,6 @@
+console.log("admin.js loaded");
+document.getElementById("jsLoaded").textContent = "JS: admin.js loaded ✅";
+
 const fileEl = document.getElementById("file");
 const typeEl = document.getElementById("type");
 const titleEl = document.getElementById("title");
