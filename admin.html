@@ -3,91 +3,127 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Admin — ANNA</title>
+  <title>Admin board</title>
   <link rel="stylesheet" href="./styles.css" />
 </head>
-<body class="adminPage">
-  <header class="glass topbar">
-    <div>
-      <div class="brand">Admin board</div>
-      <div class="muted">Загрузка + порядок + тексты сайта</div>
-    </div>
-    <a class="pill" href="./index.html">Back</a>
-  </header>
 
-  <main class="wrap adminWrap">
-    <section class="glass card">
+<body>
+  <main class="wrap glass admin">
+    <div class="topRow">
+      <div>
+        <h1>Admin board</h1>
+        <p class="muted">Загрузка + порядок + тексты сайта</p>
+        <p id="jsLoaded" class="muted">JS: …</p>
+      </div>
+      <a class="btn ghost" href="./index.html">Back</a>
+    </div>
+
+    <!-- ADMIN TOKEN -->
+    <section class="card glass">
       <h2>Admin access</h2>
       <p class="muted">Вставь токен (это твой “кабинет” без Supabase Auth).</p>
-      <input id="adminToken" placeholder="ADMIN_TOKEN" />
-      <button id="saveToken" class="pill">Save token</button>
-      <div id="tokenStatus" class="muted"></div>
-    </section>
 
-    <section class="glass card">
-      <h2>Site meta (текст + контакты)</h2>
       <div class="grid2">
         <div>
-          <label>Name</label>
-          <input id="metaName" placeholder="ANNA" />
+          <label class="label">ADMIN_TOKEN</label>
+          <input id="adminToken" class="input" placeholder="ADMIN_TOKEN" />
         </div>
-        <div>
-          <label>Tagline</label>
-          <input id="metaTagline" placeholder="AI Visual Portfolio" />
-        </div>
-        <div>
-          <label>Title</label>
-          <input id="metaTitle" placeholder="Portfolio" />
-        </div>
-        <div>
-          <label>Subtitle</label>
-          <input id="metaSubtitle" placeholder="Infinite board of AI works" />
+        <div class="actions">
+          <button id="saveToken" class="btn" type="button">Save token</button>
+          <div id="tokenStatus" class="status"></div>
         </div>
       </div>
-      <label>Links (по одному на строку: “Label | https://…”) </label>
-      <textarea id="metaLinks" rows="4" placeholder="Instagram | https://instagram.com/..."></textarea>
-      <button id="saveMeta" class="pill">Save meta</button>
-      <div id="metaStatus" class="muted"></div>
     </section>
 
-    <section class="glass card">
-      <h2>Add work</h2>
+    <!-- SITE META -->
+    <section class="card glass">
+      <h2>Site meta (текст + контакты)</h2>
+
       <div class="grid2">
         <div>
-          <label>File</label>
-          <input id="file" type="file" />
+          <label class="label">Name</label>
+          <input id="metaName" class="input" placeholder="ANNA" />
         </div>
         <div>
-          <label>Type</label>
-          <select id="type">
+          <label class="label">Tagline</label>
+          <input id="metaTagline" class="input" placeholder="AI Visual Portfolio" />
+        </div>
+
+        <div>
+          <label class="label">Title</label>
+          <input id="metaTitle" class="input" placeholder="Portfolio" />
+        </div>
+        <div>
+          <label class="label">Subtitle</label>
+          <input id="metaSubtitle" class="input" placeholder="Infinite board of AI works" />
+        </div>
+      </div>
+
+      <label class="label" style="margin-top:12px;">Links (по одному на строку: “Label | https://…“)</label>
+      <textarea id="metaLinks" class="textarea" rows="4" placeholder="Instagram | https://instagram.com/..."></textarea>
+
+      <div class="actions">
+        <button id="saveMeta" class="btn" type="button">Save meta</button>
+        <div id="metaStatus" class="status"></div>
+      </div>
+    </section>
+
+    <!-- ADD WORK -->
+    <section class="card glass">
+      <h2>Add work</h2>
+
+      <div class="grid2">
+        <div>
+          <label class="label">File</label>
+          <input id="file" class="input" type="file" />
+        </div>
+        <div>
+          <label class="label">Type</label>
+          <select id="type" class="input">
             <option value="image">image</option>
             <option value="video">video</option>
           </select>
         </div>
+
         <div>
-          <label>Title</label>
-          <input id="title" placeholder="Vogue Study #01" />
+          <label class="label">Title</label>
+          <input id="title" class="input" placeholder="Vogue Study #01" />
         </div>
         <div>
-          <label>Caption (optional)</label>
-          <input id="caption" placeholder="short vibe / prompt / note" />
+          <label class="label">Caption (optional)</label>
+          <input id="caption" class="input" placeholder="short vibe / prompt / note" />
         </div>
       </div>
-      <button id="upload" class="pill">Upload + Add</button>
-      <div id="uploadStatus" class="muted"></div>
+
+      <div class="actions">
+        <button id="upload" class="btn" type="button">Upload + Add</button>
+        <div id="uploadStatus" class="status"></div>
+      </div>
     </section>
 
-    <section class="glass card">
-      <div class="row">
+    <!-- BOARD -->
+    <section class="card glass">
+      <div class="topRow">
         <h2>Board (drag to reorder)</h2>
-        <button id="saveOrder" class="pill">Save order</button>
+        <div class="actions">
+          <button id="saveOrder" class="btn ghost" type="button">Save order</button>
+          <div id="orderStatus" class="status"></div>
+        </div>
       </div>
-      <div id="adminBoard" class="masonry adminBoard"></div>
-      <div id="orderStatus" class="muted"></div>
+      <div id="adminBoard" class="board"></div>
     </section>
   </main>
 
+  <!-- Supabase -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="./admin.js"></script>
+
+  <!-- Admin logic (ВАЖНО: defer) -->
+  <script defer src="./admin.js"></script>
+
+  <script>
+    // простой маркер, чтобы видеть, что HTML точно обновился
+    document.getElementById("jsLoaded").textContent = "JS: HTML loaded ✅";
+  </script>
 </body>
 </html>
+
