@@ -1,30 +1,39 @@
-import { assertAdmin } from "./_auth.js";
-
 export async function onRequestPost({ request, env }) {
-  const authResp = assertAdmin(request, env);
-  if (authResp) return authResp;
+  try {
+    const need = ["SUPABASE_URL", "SUPABASE_SERVICE_ROLE_KEY", "ADMIN_TOKEN"];
+    for (const k of need) if (!env[k]) return json({ ok:false, error:`Missing env var: ${k}` }, 500);
 
-  const { paths } = await request.json(); // array media_path in order
+    const token = request.headers.get("x-admin-token") || "";
+    if (token !== env.ADMIN_TOKEN) return json({ ok:false, error:"Unauthorized" }, 401);
 
-  const rows = paths.map((p, i) => ({
-    media_path: p,
-    position: i,
-    updated_at: new Date().toISOString(),
-  }));
+    const body = await request.json();
+    const items = Array.isArray(body?.items) ? body.items : [];
+    if (!items.length) return json({ ok:false, error:"No items" }, 400);
 
-  const r = await fetch(`${env.SUPABASE_URL}/rest/v1/work_order`, {
-    method: "POST",
-    headers: {
-      apikey: env.SUPABASE_SERVICE_ROLE_KEY,
-      Authorization: `Bearer ${env.SUPABASE_SERVICE_ROLE_KEY}`,
-      "content-type": "application/json",
-      Prefer: "resolution=merge-duplicates",
-    },
-    body: JSON.stringify(rows),
-  });
+    const rows = items.map((media_path, i) => ({ media_path, position: i * 10, updated_at: new Date().toISOString() }));
 
-  if (!r.ok) return new Response(await r.text(), { status: 500 });
-  return new Response(JSON.stringify({ ok: true }), {
-    headers: { "content-type": "application/json" },
-  });
+    const res = await fetch(`${env.SUPABASE_URL}/rest/v1/work_order`, {
+      method: "POST",
+      headers: {
+        "authorization": `Bearer ${env.SUPABASE_SERVICE_ROLE_KEY}`,
+        "apikey": env.SUPABASE_SERVICE_ROLE_KEY,
+        "content-type": "application/json",
+        "prefer": "resolution=merge-duplicates",
+      },
+      body: JSON.stringify(rows),
+    });
+
+    if (!res.ok) {
+      const t = await res.text();
+      return json({ ok:false, error:"DB upsert order failed", details:t }, 500);
+    }
+
+    return json({ ok:true }, 200);
+  } catch (e) {
+    return json({ ok:false, error: String(e?.message || e) }, 500);
+  }
+}
+
+function json(obj, status=200) {
+  return new Response(JSON.stringify(obj), { status, headers: { "content-type":"application/json; charset=utf-8" } });
 }
