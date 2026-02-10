@@ -89,3 +89,54 @@ async function loadBoard(){
 function toast(msg){
   alert(msg);
 }
+const statusEl = document.getElementById("jsLoaded") || document.getElementById("status");
+
+function setStatus(msg) {
+  if (statusEl) statusEl.textContent = msg;
+}
+
+async function uploadWork() {
+  const token = (localStorage.getItem("ADMIN_TOKEN") || "").trim();
+  if (!token) return setStatus("Нет ADMIN_TOKEN — вставь токен и нажми Save token");
+
+  const fileInput = document.querySelector('input[type="file"]');
+  const typeEl = document.querySelector('select');
+  const titleEl = document.querySelector('input[placeholder*="Vogue"], input[name="title"], #title');
+  const captionEl = document.querySelector('input[placeholder*="vibe"], input[name="caption"], #caption');
+
+  const file = fileInput?.files?.[0];
+  if (!file) return setStatus("Выбери файл");
+
+  const fd = new FormData();
+  fd.append("file", file);
+  fd.append("type", typeEl?.value || "image");
+  fd.append("title", titleEl?.value || "");
+  fd.append("caption", captionEl?.value || "");
+
+  setStatus("Загружаю…");
+
+  const r = await fetch("/api/add-work", {
+    method: "POST",
+    headers: { "x-admin-token": token },
+    body: fd,
+  });
+
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok || !j.ok) {
+    setStatus("Ошибка: " + (j.error || r.status));
+    console.log("Upload error:", j);
+    return;
+  }
+
+  setStatus("Готово: " + j.path);
+  // дальше ты можешь вызвать refreshBoard() если он у тебя есть
+}
+
+document.addEventListener("click", (e) => {
+  const btn = e.target.closest("button");
+  if (!btn) return;
+  if (btn.textContent?.includes("Upload")) {
+    e.preventDefault();
+    uploadWork().catch(err => setStatus("JS error: " + err.message));
+  }
+});
